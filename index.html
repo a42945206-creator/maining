@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>SHADOW ECONOMY</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #14141f;
+  --surface-light: #1e1e2d;
+  --primary: #4f46e5; /* Индиго */
+  --primary-light: #818cf8;
+  --accent: #22d3ee; /* Циан */
+  --success: #10b981;
+  --danger: #ef4444;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.08);
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-image: radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.15) 0%, transparent 60%);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 90px;
+}
+
+/* ВЕРХНЯЯ ПАНЕЛЬ */
+.top-bar {
+  position: sticky;
+  top: 0;
+  background: rgba(10, 10, 15, 0.9);
+  backdrop-filter: blur(12px);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+.balance-chip {
+  background: var(--surface-light);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: white;
+}
+
+/* КАРТОЧКИ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-glow {
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* КЛИКЕР */
+.clicker-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  background: linear-gradient(180deg, rgba(79, 70, 229, 0.1) 0%, transparent 100%);
+  border-radius: 50%;
+  margin: 20px auto;
+  cursor: pointer;
+  transition: transform 0.1s;
+  position: relative;
+}
+.clicker-area:active { transform: scale(0.95); }
+.clicker-icon { font-size: 80px; filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.5)); }
+.click-text { font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 10px; }
+
+/* КНОПКИ */
+.btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: linear-gradient(135deg, #4f46e5, #3b82f6); color: white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
+.btn-success { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
+.btn-outline { background: var(--surface-light); color: var(--text); border: 1px solid var(--border); }
+.btn-gold { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000; }
+
+/* СПИСКИ */
+.item-list { display: flex; flex-direction: column; gap: 12px; }
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.item-icon { font-size: 28px; margin-right: 12px; }
+.item-info { flex: 1; }
+.item-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.item-desc { font-size: 12px; color: var(--muted); }
+.item-price { font-weight: 800; color: var(--accent); font-size: 14px; }
+
+/* НАВИГАЦИЯ */
+.nav-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 70px;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s;
+  gap: 4px;
+}
+.nav-item.active { color: var(--primary-light); }
+.nav-icon { font-size: 22px; }
+.nav-item.active .nav-icon { filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.6)); }
+
+/* МОДАЛКИ */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; z-index: 200;
+  opacity: 0; pointer-events: none; transition: 0.3s;
+}
+.modal-bg.active { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  width: 100%; max-width: 400px;
+  transform: translateY(20px); transition: 0.3s;
+}
+.modal-bg.active .modal { transform: translateY(0); }
+
+/* СКРЫТИЕ */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <div style="width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: bold;">S</div>
+    <div style="font-weight: 800; font-size: 16px;">SHADOW</div>
+  </div>
+  <div class="balance-chip" id="balance-display">0 ₿</div>
+</div>
+
+<div class="content" id="app"></div>
+
+<div class="nav-bar">
+  <div class="nav-item active" onclick="App.tab('earn', this)">
+    <div class="nav-icon">💰</div><div>ЗАРАБОТОК</div>
+  </div>
+  <div class="nav-item" onclick="App.tab('invest', this)">
+    <div class="nav-icon">📈</div><div>ИНВЕСТИЦИИ</div>
+  </div>
+  <div class="nav-item" onclick="App.tab('business', this)">
+    <div class="nav-icon">🏢</div><div>БИЗНЕС</div>
+  </div>
+  <div class="nav-item" onclick="App.tab('shop', this)">
+    <div class="nav-icon">🛒</div><div>МАГАЗИН</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+if (tg.setHeaderColor) tg.setHeaderColor('#0a0a0f');
+
+// ====================== СОСТОЯНИЕ ИГРЫ ======================
+const S = {
+  p: JSON.parse(localStorage.getItem('shadow_economy')) || {
+    bytes: 100,
+    clicks: 0,
+    level: 1,
+    clickPower: 1,
+    passiveIncome: 0,
+    autoClicker: false,
+    investments: [],
+    businesses: [],
+    stars: 0
+  },
+  tab: 'earn',
+  
+  save() { localStorage.setItem('shadow_economy', JSON.stringify(this.p)); },
+  
+  // Пассивный доход (вызывается каждую секунду)
+  tick() {
+    if (this.p.autoClicker) {
+      this.p.bytes += this.p.clickPower; // Автокликер дает 1 клик в секунду
+      this.p.clicks++;
+    }
+    if (this.p.passiveIncome > 0) {
+      this.p.bytes += this.p.passiveIncome / 3600; // Доход в час разбитый на секунды
+    }
+    this.updateBalance();
+    this.save();
+  },
+
+  updateBalance() {
+    const el = document.getElementById('balance-display');
+    if (el) el.textContent = formatNumber(Math.floor(this.p.bytes)) + ' ₿';
+  }
+};
+
+// ====================== ДАННЫЕ МАГАЗИНА ======================
+const SHOP_ITEMS = [
+  { id: 'auto', name: 'Автокликер', desc: 'Кликает 1 раз в секунду, даже когда игра закрыта', price: 29, type: 'star', icon: '🤖' },
+  { id: 'boost', name: 'Сундук Хакера', desc: 'Мгновенный кэш на баланс (от 10 000 ₿)', price: 10, type: 'star', icon: '🎁' },
+  { id: 'multiplier', name: 'Множитель x2', desc: 'Увеличивает доход навсегда', price: 49, type: 'star', icon: '🚀' }
+];
+
+const INVESTMENTS = [
+  { id: 'btc', name: 'Bitcoin', price: 60000, change: 5.2, icon: '🪙' },
+  { id: 'eth', name: 'Ethereum', price: 3000, change: -2.1, icon: '🔷' },
+  { id: 'sol', name: 'Solana', price: 150, change: 12.4, icon: '🟣' },
+  { id: 'aapl', name: 'Apple Inc.', price: 180, change: 1.5, icon: '🍎' },
+  { id: 'tsla', name: 'Tesla Inc.', price: 250, change: -4.2, icon: '🚗' }
+];
+
+const BUSINESSES = [
+  { id: 'farm', name: 'Серверная Ферма', desc: 'Доход: 100 ₿/час', price: 1000, income: 100, icon: '🖥️' },
+  { id: 'bots', name: 'Сеть Ботов', desc: 'Доход: 500 ₿/час', price: 5000, income: 500, icon: '🤖' },
+  { id: 'darknet', name: 'DarkNet Маркет', desc: 'Доход: 2000 ₿/час', price: 25000, income: 2000, icon: '🕸️' }
+];
+
+// ====================== ФОРМАТИРОВАНИЕ ======================
+function formatNumber(num) {
+  if (num >= 1e9) return (num / 1e9).toFixed(2) + ' млрд';
+  if (num >= 1e6) return (num / 1e6).toFixed(2) + ' млн';
+  if (num >= 1e3) return (num / 1e3).toFixed(2) + ' тыс';
+  return num.toString();
+}
+
+// ====================== ИНТЕРФЕЙС ======================
+const App = {
+  tab(name, el) {
+    S.tab = name;
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+    this.render();
+  },
+
+  render() {
+    const app = document.getElementById('app');
+    S.updateBalance();
+
+    if (S.tab === 'earn') {
+      app.innerHTML = `
+        <div class="card" style="text-align: center; padding: 20px;">
+          <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;">Твой доход</div>
+          <div style="font-size: 28px; font-weight: 900; color: var(--accent);">${formatNumber(S.p.clickPower)} ₿ / клик</div>
+        </div>
+
+        <div class="clicker-area" onclick="App.click()">
+          <div class="clicker-icon">👨‍💻</div>
+          <div class="click-text">ВЗЛОМАТЬ СИСТЕМУ</div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-weight: 700;">Буст дохода</div>
+            <div style="font-size: 12px; color: var(--muted);">x5 на 30 сек</div>
+          </div>
+          <button class="btn btn-primary" onclick="App.boost()">АКТИВИРОВАТЬ</button>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), transparent);">
+          <div style="font-weight: 700; margin-bottom: 5px;">Статистика</div>
+          <div style="font-size: 13px; color: var(--muted);">Всего кликов: ${formatNumber(S.p.clicks)}</div>
+          <div style="font-size: 13px; color: var(--muted);">Автокликер: ${S.p.autoClicker ? '<span style="color: var(--success)">ВКЛ</span>' : 'ВЫКЛ'}</div>
+        </div>
+      `;
+    } 
+    
+    else if (S.tab === 'invest') {
+      let html = `<div style="font-size: 22px; font-weight: 800; margin-bottom: 16px;">Инвестиции</div>`;
+      html += `<div class="item-list">`;
+      INVESTMENTS.forEach(inv => {
+        const isPos = inv.change > 0;
+        html += `
+          <div class="item">
+            <div class="item-icon">${inv.icon}</div>
+            <div class="item-info">
+              <div class="item-title">${inv.name}</div>
+              <div class="item-desc" style="color: ${isPos ? 'var(--success)' : 'var(--danger)'}">
+                ${isPos ? '+' : ''}${inv.change}% • ${formatNumber(inv.price)} ₿
+              </div>
+            </div>
+            <button class="btn btn-outline" style="width: auto; padding: 8px 16px; font-size: 12px;" onclick="App.buyInvest('${inv.id}')">КУПИТЬ</button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      app.innerHTML = html;
+    }
+
+    else if (S.tab === 'business') {
+      let html = `<div style="font-size: 22px; font-weight: 800; margin-bottom: 16px;">Бизнес</div>`;
+      html += `<div class="card" style="background: var(--surface-light);">
+        <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Пассивный доход</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--success);">${formatNumber(S.p.passiveIncome)} ₿ / час</div>
+      </div>`;
+      
+      html += `<div class="item-list">`;
+      BUSINESSES.forEach(biz => {
+        const owned = S.p.businesses.filter(b => b === biz.id).length;
+        html += `
+          <div class="item">
+            <div class="item-icon">${biz.icon}</div>
+            <div class="item-info">
+              <div class="item-title">${biz.name} ${owned > 0 ? `(x${owned})` : ''}</div>
+              <div class="item-desc">${biz.desc}</div>
+            </div>
+            <button class="btn btn-outline" style="width: auto; padding: 8px 12px; font-size: 11px;" onclick="App.buyBiz('${biz.id}')">
+              ${formatNumber(biz.price)} ₿
+            </button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      app.innerHTML = html;
+    }
+
+    else if (S.tab === 'shop') {
+      let html = `<div style="font-size: 22px; font-weight: 800; margin-bottom: 16px;">Магазин</div>`;
+      html += `<div style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">Покупки за Telegram Stars ⭐</div>`;
+      html += `<div class="item-list">`;
+      SHOP_ITEMS.forEach(item => {
+        html += `
+          <div class="item">
+            <div class="item-icon">${item.icon}</div>
+            <div class="item-info">
+              <div class="item-title">${item.name}</div>
+              <div class="item-desc">${item.desc}</div>
+            </div>
+            <button class="btn btn-gold" style="width: auto; padding: 8px 12px; font-size: 12px;" onclick="App.buyStar('${item.id}', ${item.price})">
+              ${item.price} ⭐
+            </button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      app.innerHTML = html;
+    }
+  },
+
+  click() {
+    let power = S.p.clickPower;
+    S.p.bytes += power;
+    S.p.clicks++;
+    
+    // Эффект частиц
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    
+    // Всплывающий текст
+    const area = document.querySelector('.clicker-area');
+    if (area) {
+      const float = document.createElement('div');
+      float.textContent = `+${formatNumber(power)}`;
+      float.style.cssText = `position:absolute; color:var(--accent); font-weight:900; font-size:20px; pointer-events:none; animation: floatUp 0.8s ease-out forwards;`;
+      float.style.left = Math.random() * 80 + 10 + '%';
+      float.style.top = '40%';
+      area.appendChild(float);
+      setTimeout(() => float.remove(), 800);
+    }
+    
+    S.updateBalance();
+    S.save();
+  },
+
+  boost() {
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    const originalPower = S.p.clickPower;
+    S.p.clickPower *= 5;
+    tg.showAlert('Буст активирован! Доход x5 на 30 секунд.');
+    this.render(); // Обновляем визуал
+
+    setTimeout(() => {
+      S.p.clickPower = originalPower;
+      this.render();
+    }, 30000);
+  },
+
+  buyInvest(id) {
+    const inv = INVESTMENTS.find(i => i.id === id);
+    if (S.p.bytes >= inv.price) {
+      S.p.bytes -= inv.price;
+      S.p.investments.push(id);
+      S.save();
+      S.updateBalance();
+      tg.showAlert(`Куплено: ${inv.name}`);
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else {
+      tg.showAlert('Недостаточно средств!');
+    }
+  },
+
+  buyBiz(id) {
+    const biz = BUSINESSES.find(b => b.id === id);
+    if (S.p.bytes >= biz.price) {
+      S.p.bytes -= biz.price;
+      S.p.businesses.push(id);
+      S.p.passiveIncome += biz.income;
+      S.save();
+      S.updateBalance();
+      this.render();
+      tg.showAlert(`Открыт бизнес: ${biz.name}`);
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else {
+      tg.showAlert('Недостаточно средств!');
+    }
+  },
+
+  buyStar(id, price) {
+    // В реальной игре здесь вызов Telegram API: tg.invoice
+    // Пока имитируем покупку
+    if (confirm(`Купить ${id} за ${price} звезд? (В реальной игре откроется окно оплаты Telegram)`)) {
+      if (id === 'auto') S.p.autoClicker = true;
+      if (id === 'boost') S.p.bytes += 10000;
+      if (id === 'multiplier') S.p.clickPower *= 2;
+      
+      S.save();
+      this.render();
+      tg.showAlert('Покупка успешна!');
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    }
+  }
+};
+
+// CSS для всплывающего текста
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-80px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+// Запуск игры
+App.render();
+setInterval(() => S.tick(), 1000);
+</script>
+</body>
+</html>
